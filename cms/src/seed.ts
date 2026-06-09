@@ -45,7 +45,6 @@ export async function seedCMS(payload: Payload, force: boolean = false) {
       collection: 'media',
       filePath: './src/placeholder.webp',
       data: {
-        alt: 'Max Mustermann Profile Photo',
       },
     })
 
@@ -53,7 +52,6 @@ export async function seedCMS(payload: Payload, force: boolean = false) {
       collection: 'media',
       filePath: './src/placeholder.webp',
       data: {
-        alt: 'Blog Post Featured Image',
       },
     })
 

@@ -26,7 +26,7 @@ export async function getPageData(
     },
     {
       headers: {
-        'X-Use-Cache': options?.preview ? 'false' : 'true',
+        'X-Use-Cache': (options?.preview || import.meta.env.DEV) ? 'false' : 'true',
       },
     },
   )

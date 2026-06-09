@@ -122,8 +122,6 @@ export interface Config {
   };
   locale: 'de' | 'en';
   widgets: {
-    'alt-text-health': AltTextHealthWidget;
-    'vercel-deployments': VercelDeploymentsWidget;
     collections: CollectionsWidget;
   };
   user: ApiKey | User;
@@ -197,7 +195,7 @@ export interface Page {
         title?: string | null;
         subTitle?: string | null;
         highlightBackground?: boolean | null;
-        blocks?: (RichTextBlock | BlogPostsBlock | AuthorsBlock)[] | null;
+        blocks?: (RichTextBlock | BlogPostsBlock | AuthorsBlock | StaffCarouselBlock)[] | null;
         id?: string | null;
       }[]
     | null;
@@ -322,11 +320,6 @@ export interface Author {
  */
 export interface Media {
   id: string;
-  alt: string;
-  /**
-   * Keywords which describe the image. Used when searching for the image.
-   */
-  keywords?: string[] | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -419,6 +412,27 @@ export interface AuthorsBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'authors';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "StaffCarouselBlock".
+ */
+export interface StaffCarouselBlock {
+  heading: string;
+  intro?: string | null;
+  staff: {
+    name: string;
+    summary: string;
+    image: string | Media;
+    cta: {
+      label: string;
+      link: string;
+    };
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'staff-carousel';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -603,6 +617,7 @@ export interface PagesSelect<T extends boolean = true> {
               'rich-text'?: T | RichTextBlockSelect<T>;
               'blog-posts'?: T | BlogPostsBlockSelect<T>;
               authors?: T | AuthorsBlockSelect<T>;
+              'staff-carousel'?: T | StaffCarouselBlockSelect<T>;
             };
         id?: T;
       };
@@ -653,6 +668,30 @@ export interface BlogPostsBlockSelect<T extends boolean = true> {
  */
 export interface AuthorsBlockSelect<T extends boolean = true> {
   authors?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "StaffCarouselBlock_select".
+ */
+export interface StaffCarouselBlockSelect<T extends boolean = true> {
+  heading?: T;
+  intro?: T;
+  staff?:
+    | T
+    | {
+        name?: T;
+        summary?: T;
+        image?: T;
+        cta?:
+          | T
+          | {
+              label?: T;
+              link?: T;
+            };
+        id?: T;
+      };
   id?: T;
   blockName?: T;
 }
@@ -716,8 +755,6 @@ export interface AuthorsSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
-  alt?: T;
-  keywords?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -1000,26 +1037,6 @@ export interface LabelsSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "alt-text-health_widget".
- */
-export interface AltTextHealthWidget {
-  data?: {
-    [k: string]: unknown;
-  };
-  width: 'medium' | 'large' | 'x-large' | 'full';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "vercel-deployments_widget".
- */
-export interface VercelDeploymentsWidget {
-  data?: {
-    [k: string]: unknown;
-  };
-  width: 'medium' | 'large' | 'x-large' | 'full';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

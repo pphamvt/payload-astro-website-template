@@ -177,3 +177,6 @@ dist
 /.unlighthouse
 .vscode/terminals.json
 **/.vercel/output
+
+# Media
+/cms/media/

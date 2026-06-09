@@ -1,0 +1,90 @@
+---
+import { Card, CardContent } from "@/components/starwind/card";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/starwind/carousel";
+import type { StaffCarouselBlock as StaffCarouselBlockType } from 'cms/src/payload-types'
+
+import { CMS_URL } from 'astro:env/client'
+
+type Props = StaffCarouselBlockType
+const { heading, intro, staff } = Astro.props
+
+---
+<div class="mx-auto max-w-6xl px-6">
+  {heading && <h2 class="text-3xl text-center font-semibold mb-2">{heading}</h2>}
+  {intro && <p class="text-muted-foreground text-center mb-8">{intro}</p>}
+
+  <Carousel id="carousel-autoplay" autoInit={false} opts={{ align: "start", loop: true }} class="mx-auto w-full max-w-md">
+    <CarouselContent>
+      {staff.map((member) => {
+            const image = member.image as { url?: string; alt?: string; width?: number; height?: number }
+            const imageUrl = image?.url ? `${CMS_URL}${image.url}` : null
+
+            return (
+              <CarouselItem>
+                <div class="p-1">
+                  <Card>
+                    <CardContent class="flex flex-col p-0 overflow-hidden">
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={image.alt ?? member.name}
+                          width={image.width}
+                          height={image.height}
+                          class="w-full h-48 object-cover"
+                          loading="lazy"
+                        />
+                      ) :
+                        <img src="/default-profile.png" alt="default profile" class="w-full h-48 object-cover" />
+                      }
+                      <div class="p-5 flex flex-col gap-3">
+                        <h3 class="font-semibold text-lg">{member.name}</h3>
+                        <p class="text-sm text-muted-foreground leading-relaxed flex-1">{member.summary}</p>
+                        <a
+                          href={member.cta.link}
+                          class="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline mt-2"
+                        >
+                          {member.cta.label} →
+                        </a>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CarouselItem>
+            )
+          })}
+    </CarouselContent>
+    <CarouselPrevious />
+    <CarouselNext />
+  </Carousel>
+</div>
+
+<script>
+  import Autoplay from "embla-carousel-autoplay";
+
+  import { initCarousel } from "@/components/starwind/carousel";
+
+  function initAutoplayCarousel() {
+    const carouselElement = document.getElementById("carousel-autoplay");
+    if (!carouselElement) return;
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    initCarousel(carouselElement, {
+      plugins: prefersReducedMotion ? [] : [
+        Autoplay({
+          delay: 2000,
+        }),
+      ],
+    });
+  }
+
+  initAutoplayCarousel();
+
+  document.addEventListener("astro:after-swap", initAutoplayCarousel);
+</script>

@@ -6,6 +6,8 @@ import SectionBlock from './SectionBlock.astro'
 export type Props = NonNullable<Page['sections']>[number] & { withoutTopSpace?: boolean }
 
 const { title, subTitle, blocks, highlightBackground, withoutTopSpace = false } = Astro.props
+
+console.log('blocks:', JSON.stringify(blocks?.map(b => b.blockType)))
 ---
 
 <SectionShell

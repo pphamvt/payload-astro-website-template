@@ -1,14 +1,8 @@
-import {
-  openAIResolver as altTextOpenAIResolver,
-  payloadAltTextPlugin,
-} from '@jhb.software/payload-alt-text-plugin'
 import { alternatePathsField, payloadPagesPlugin } from '@jhb.software/payload-pages-plugin'
 import { vercelDeploymentsPlugin } from '@jhb.software/payload-vercel-deployments'
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
-import { resendAdapter } from '@payloadcms/email-resend'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 import { FixedToolbarFeature, lexicalEditor, LinkFeature } from '@payloadcms/richtext-lexical'
-import { s3Storage } from '@payloadcms/storage-s3'
 import { attachDatabasePool } from '@vercel/functions'
 import path from 'path'
 import { buildConfig, CollectionConfig, CollectionSlug } from 'payload'
@@ -17,7 +11,7 @@ import { fileURLToPath } from 'url'
 import CodeBlock from './blocks/CodeBlock'
 import ApiKeys from './collections/ApiKeys'
 import Authors from './collections/Authors'
-import { generateFileURL, Media } from './collections/Media'
+import { Media } from './collections/Media'
 import Pages from './collections/Pages'
 import Posts from './collections/Posts'
 import { Redirects } from './collections/Redirects'
@@ -29,7 +23,7 @@ import { getStatisPagesProps } from './endpoints/staticPages'
 import Footer from './globals/Footer'
 import Header from './globals/Header'
 import Labels from './globals/Labels'
-import type { Media as MediaType } from './payload-types'
+import { seedCMS } from './seed'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -69,6 +63,51 @@ const generatePageURL = ({
     : null
 }
 
+const plugins = [
+  payloadPagesPlugin({
+    generatePageURL,
+  }),    
+  seoPlugin({
+    collections: pageCollectionsSlugs,
+    uploadsCollection: 'media',
+    generateURL: ({ doc }) => generatePageURL({ path: doc.path, preview: false }) ?? '',
+    generateTitle: ({ doc }) => `${doc.title} - ${websiteName}`,
+    fields: ({ defaultFields }) => [
+      ...defaultFields,
+      {
+        name: 'noIndex',
+        type: 'checkbox',
+        index: true,
+        defaultValue: false,
+        admin: {
+          description:
+            'If checked, a noindex meta tag will be added to the page and it will be excluded from the sitemap.',
+        },
+      },
+      alternatePathsField(),
+    ],
+    interfaceName: 'SeoMetadata',
+  }),
+]
+
+if (
+  process.env.VERCEL_API_TOKEN &&
+  process.env.FRONTEND_VERCEL_PROJECT_ID
+) {
+  plugins.push(
+    vercelDeploymentsPlugin({
+      vercel: {
+        apiToken: process.env.VERCEL_API_TOKEN,
+        projectId: process.env.FRONTEND_VERCEL_PROJECT_ID,
+        teamId: process.env.FRONTEND_VERCEL_TEAM_ID,
+      },
+      widget: {
+        websiteUrl: process.env.NEXT_PUBLIC_FRONTEND_URL,
+      },
+    }),
+  )
+}
+
 export default buildConfig({
   localization: {
     locales: locales.map((locale) => ({
@@ -90,8 +129,7 @@ export default buildConfig({
     },
     dashboard: {
       defaultLayout: [
-        { widgetSlug: 'vercel-deployments', width: 'medium' },
-        { widgetSlug: 'alt-text-health', width: 'medium' },
+        { widgetSlug: 'collections', width: 'full' },
       ],
       widgets: [],
     },
@@ -116,12 +154,7 @@ export default buildConfig({
   db: mongooseAdapter({
     url: process.env.MONGODB_URI!,
     // see https://vercel.com/guides/connection-pooling-with-functions
-    afterOpenConnection: async (adapter) => attachDatabasePool(adapter.connection.getClient()),
-  }),
-  email: resendAdapter({
-    defaultFromAddress: 'cms@your-website.com',
-    defaultFromName: `${websiteName} CMS`,
-    apiKey: process.env.RESEND_API_KEY!,
+    afterOpenConnection: async (adapter) => attachDatabasePool(adapter.connection.getClient()),    
   }),
   endpoints: [
     {
@@ -150,84 +183,10 @@ export default buildConfig({
     CodeBlock,
   ],
   sharp,
-  plugins: [
-    payloadPagesPlugin({
-      generatePageURL,
-    }),
-    payloadAltTextPlugin({
-      collections: [Media.slug as CollectionSlug],
-      resolver: altTextOpenAIResolver({
-        apiKey: process.env.OPENAI_API_KEY!,
-        model: 'gpt-4.1-mini',
-      }),
-      getImageThumbnail: (doc: Record<string, unknown>) => {
-        const media = doc as unknown as MediaType
-
-        if (!media.url) {
-          throw new Error('URL not found. Could not return image thumbnail.')
-        }
-
-        // use sm if possible to reduce token count and speed up the generation of the alt text
-        return 'sizes' in media
-          ? (media.sizes?.sm?.url ?? media.sizes?.md?.url ?? media.sizes?.lg?.url ?? media.url!)
-          : media.url!
-      },
-    }),
-    vercelDeploymentsPlugin({
-      vercel: {
-        apiToken: process.env.VERCEL_API_TOKEN!,
-        projectId: process.env.FRONTEND_VERCEL_PROJECT_ID!,
-        teamId: process.env.FRONTEND_VERCEL_TEAM_ID,
-      },
-      widget: {
-        websiteUrl: process.env.NEXT_PUBLIC_FRONTEND_URL,
-      },
-    }),
-    seoPlugin({
-      collections: pageCollectionsSlugs,
-      uploadsCollection: 'media',
-      generateURL: ({ doc }) => generatePageURL({ path: doc.path, preview: false }) ?? '',
-      generateTitle: ({ doc }) => `${doc.title} - ${websiteName}`,
-      fields: ({ defaultFields }) => [
-        ...defaultFields,
-        {
-          name: 'noIndex',
-          type: 'checkbox',
-          index: true,
-          defaultValue: false,
-          admin: {
-            description:
-              'If checked, a noindex meta tag will be added to the page and it will be excluded from the sitemap.',
-          },
-        },
-        alternatePathsField(),
-      ],
-      interfaceName: 'SeoMetadata',
-    }),
-    s3Storage({
-      collections: {
-        media: {
-          // serve files directly from S3 object storage to improve performance.
-          // The frontend proxies these via /media/* with cache-control headers (see web/vercel.json).
-          disablePayloadAccessControl: true,
-          generateFileURL,
-        },
-      },
-      bucket: process.env.S3_BUCKET!,
-      config: {
-        endpoint: process.env.S3_ENDPOINT,
-        region: process.env.S3_REGION,
-        credentials: {
-          accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-        },
-      },
-      clientUploads: true,
-      acl: 'public-read',
-    }),
-  ],
+  plugins,
+  
   // Uncomment the following line to seed the CMS with default data
   // onInit: async (payload) => {
   //  await seedCMS(payload)
-  //},
+  // },
 })

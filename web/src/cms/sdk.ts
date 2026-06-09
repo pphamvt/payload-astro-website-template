@@ -22,6 +22,7 @@ export const payloadSDK = new PayloadSDK<Config>({
   baseInit: {
     headers: {
       Authorization: `api-keys API-Key ${CMS_API_KEY}`,
+      'X-Use-Cache': 'false',
     },
   },
   fetch: createCachedFetch(globalThis.fetch),

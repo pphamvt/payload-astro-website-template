@@ -1,3 +1,4 @@
+import tailwindcss from "@tailwindcss/vite";
 // @ts-check
 import vercel from '@astrojs/vercel'
 import tailwindcss from '@tailwindcss/vite'
@@ -5,7 +6,7 @@ import { defineConfig, envField, fontProviders } from 'astro/config'
 import { getRedirects } from './src/cms/getRedirects'
 
 export default defineConfig({
-  redirects: await getRedirects(),
+	redirects: await getRedirects(),
   adapter: vercel({
     edgeMiddleware: true,
   }),

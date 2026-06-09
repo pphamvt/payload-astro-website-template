@@ -1,6 +1,7 @@
 import AuthorsBlock from '@/blocks/AuthorsBlock'
 import BlogPostsBlock from '@/blocks/BlogPostsBlock'
 import RichTextBlock from '@/blocks/RichTextBlock'
+import StaffCarouselBlock from '@/blocks/StaffCarouselBlock'
 import { heroSection } from '@/fields/heroSection'
 import { authenticated } from '@/shared/access/authenticated'
 import { CollectionGroups } from '@/shared/CollectionGroups'
@@ -63,7 +64,7 @@ const Pages: PageCollectionConfig = {
         {
           name: 'blocks',
           type: 'blocks',
-          blocks: [RichTextBlock, BlogPostsBlock, AuthorsBlock],
+          blocks: [RichTextBlock, BlogPostsBlock, AuthorsBlock, StaffCarouselBlock],
         },
       ],
     },
